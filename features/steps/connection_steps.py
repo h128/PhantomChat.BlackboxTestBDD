@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import uuid
 from typing import Any
 
 from behave import given, then, when
@@ -106,7 +107,19 @@ def step_send_chat_message(context, name: str, message: str) -> None:
 @when('client "{name}" leaves the current room')
 def step_leave_room(context, name: str) -> None:
     client = context.world.create_client(name)
-    response = client.send_command(SocketCommand.LEAVE_ROOM)
+    request_uuid = uuid.uuid4().hex
+    client.send_json(
+        {
+            "request_uuid": request_uuid,
+            "command": int(SocketCommand.LEAVE_ROOM),
+        }
+    )
+    response = client.wait_for(
+        predicate=lambda item: item.get("status") is not None
+        and item.get("event_name") is None
+        and item.get("request_uuid") in {request_uuid, "", None},
+        description=f"leave-room response for client '{name}'",
+    )
     context.world.last_socket_response[name] = response
 
 

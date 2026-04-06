@@ -1,3 +1,4 @@
+@crypto_contract
 Feature: Crypto-related handshake contract
   The externally visible join protocol should expose stable key material and reject obviously malformed client public keys.
 

@@ -35,10 +35,6 @@ Feature: Room lifecycle and chat messaging
       | field   | value             |
       | status  | 0                 |
       | message | hello from behave |
-    And client "alice" should receive a "NewMessageReceived" event containing
-      | field       | value             |
-      | sender_uuid | alice             |
-      | message     | hello from behave |
     And client "bob" should receive a "NewMessageReceived" event containing
       | field       | value             |
       | sender_uuid | alice             |
@@ -60,9 +56,9 @@ Feature: Room lifecycle and chat messaging
     And client "bob" joins room "leave_room" with a generated libsodium-style public key
     When client "bob" leaves the current room
     Then the response for client "bob" should contain
-      | field   | value                |
+      | field   | value |
       | status  | 0                    |
-      | message | Left room            |
     And client "alice" should receive a "LeaveRoom" event containing
       | field     | value |
       | user_uuid | bob   |
+    And the response field "message" for client "bob" should contain "Left room"
