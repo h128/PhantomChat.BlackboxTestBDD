@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import requests
 
@@ -10,6 +10,7 @@ class PhantomHttpClient:
     base_url: str
     timeout_seconds: float
     verify_tls: bool
+    session: requests.Session = field(init=False)
 
     def __post_init__(self) -> None:
         self.session = requests.Session()

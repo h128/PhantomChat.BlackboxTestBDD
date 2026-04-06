@@ -1,0 +1,110 @@
+<testsuite name="file_transfer.File transfer" tests="2" errors="2" failures="0" skipped="0" time="0.033427" timestamp="2026-04-06T18:04:47.691755" hostname="LAPTOP-SJOAEN66"><testcase classname="file_transfer.File transfer" name="A room member can upload and download a file" status="error" time="0.028466"><error type="WebSocketBadStatusException" message="Handshake status 404 Not Found -+-+- {'connection': 'Keep-Alive', 'server': 'Embedthis-http', 'cache-control': 'no-cache', 'date': 'Mon, 06 Apr 2026 16:04:47 GMT', 'content-length': '173', 'keep-alive': 'timeout=60, max=199'} -+-+- b'&lt;!DOCTYPE html&gt;\r\n&lt;html&gt;&lt;head&gt;&lt;title&gt;Not Found&lt;/title&gt;&lt;/head&gt;\r\n&lt;body&gt;\r\n&lt;h2&gt;Access Error: 404 -- Not Found&lt;/h2&gt;\r\n&lt;pre&gt;Cannot open document for: /room&lt;/pre&gt;\r\n&lt;/body&gt;\r\n&lt;/html&gt;\r\n'">
+<![CDATA[
+Failing step: And WebSocket client "alice" is connected ... error in 0.027s
+Location: features/file_transfer.feature:6
+Traceback (most recent call last):
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\behave\model.py", line 1991, in run
+    match.run(runner.context)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\behave\matchers.py", line 105, in run
+    self.func(context, *args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "features\steps\connection_steps.py", line 77, in step_connect_client
+    client.connect()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\src\phantomchat_blackbox\socket_client.py", line 39, in connect
+    self._socket = websocket.create_connection(self.url, timeout=self.timeout_seconds, **options)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_core.py", line 664, in create_connection
+    websock.connect(url, **options)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_core.py", line 268, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+                              ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_handshake.py", line 66, in handshake
+    status, resp = _get_resp_headers(sock)
+                   ~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_handshake.py", line 158, in _get_resp_headers
+    raise WebSocketBadStatusException(
+    ...<5 lines>...
+    )
+websocket._exceptions.WebSocketBadStatusException: Handshake status 404 Not Found -+-+- {'connection': 'Keep-Alive', 'server': 'Embedthis-http', 'cache-control': 'no-cache', 'date': 'Mon, 06 Apr 2026 16:04:47 GMT', 'content-length': '173', 'keep-alive': 'timeout=60, max=199'} -+-+- b'<!DOCTYPE html>\r\n<html><head><title>Not Found</title></head>\r\n<body>\r\n<h2>Access Error: 404 -- Not Found</h2>\r\n<pre>Cannot open document for: /room</pre>\r\n</body>\r\n</html>\r\n'
+]]>
+</error><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario: A room member can upload and download a file
+    Given a unique room alias "files_room" ... passed in 0.001s
+    And WebSocket client "alice" is connected ... error in 0.027s
+    And WebSocket client "bob" is connected ... skipped in 0.000s
+    And client "alice" joins room "files_room" with a generated libsodium-style public key ... skipped in 0.000s
+    And client "bob" joins room "files_room" with a generated libsodium-style public key ... skipped in 0.000s
+    When user "alice" uploads file "notes.txt" to room "files_room" with content ... skipped in 0.000s
+      """
+      encrypted payload bytes
+      """
+    Then the last HTTP response should have status 200 ... skipped in 0.000s
+    And client "bob" should receive a "FileUploaded" event containing ... skipped in 0.000s
+      | field     | value     |
+      | file_name | notes.txt |
+      | user_uuid | alice     |
+      | poster    | false     |
+    When the file "notes.txt" is downloaded from room "files_room" ... skipped in 0.000s
+    Then the downloaded content should equal ... skipped in 0.000s
+      """
+      encrypted payload bytes
+      """
+
+@scenario.end
+--------------------------------------------------------------------------------
+]]>
+</system-out></testcase><testcase classname="file_transfer.File transfer" name="A non-member cannot upload into an existing room" status="error" time="0.004961"><error type="WebSocketBadStatusException" message="Handshake status 404 Not Found -+-+- {'connection': 'Keep-Alive', 'server': 'Embedthis-http', 'cache-control': 'no-cache', 'date': 'Mon, 06 Apr 2026 16:04:47 GMT', 'content-length': '173', 'keep-alive': 'timeout=60, max=199'} -+-+- b'&lt;!DOCTYPE html&gt;\r\n&lt;html&gt;&lt;head&gt;&lt;title&gt;Not Found&lt;/title&gt;&lt;/head&gt;\r\n&lt;body&gt;\r\n&lt;h2&gt;Access Error: 404 -- Not Found&lt;/h2&gt;\r\n&lt;pre&gt;Cannot open document for: /room&lt;/pre&gt;\r\n&lt;/body&gt;\r\n&lt;/html&gt;\r\n'">
+<![CDATA[
+Failing step: And WebSocket client "alice" is connected ... error in 0.004s
+Location: features/file_transfer.feature:28
+Traceback (most recent call last):
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\behave\model.py", line 1991, in run
+    match.run(runner.context)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\behave\matchers.py", line 105, in run
+    self.func(context, *args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "features\steps\connection_steps.py", line 77, in step_connect_client
+    client.connect()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\src\phantomchat_blackbox\socket_client.py", line 39, in connect
+    self._socket = websocket.create_connection(self.url, timeout=self.timeout_seconds, **options)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_core.py", line 664, in create_connection
+    websock.connect(url, **options)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_core.py", line 268, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+                              ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_handshake.py", line 66, in handshake
+    status, resp = _get_resp_headers(sock)
+                   ~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_handshake.py", line 158, in _get_resp_headers
+    raise WebSocketBadStatusException(
+    ...<5 lines>...
+    )
+websocket._exceptions.WebSocketBadStatusException: Handshake status 404 Not Found -+-+- {'connection': 'Keep-Alive', 'server': 'Embedthis-http', 'cache-control': 'no-cache', 'date': 'Mon, 06 Apr 2026 16:04:47 GMT', 'content-length': '173', 'keep-alive': 'timeout=60, max=199'} -+-+- b'<!DOCTYPE html>\r\n<html><head><title>Not Found</title></head>\r\n<body>\r\n<h2>Access Error: 404 -- Not Found</h2>\r\n<pre>Cannot open document for: /room</pre>\r\n</body>\r\n</html>\r\n'
+]]>
+</error><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario: A non-member cannot upload into an existing room
+    Given a unique room alias "restricted_room" ... passed in 0.001s
+    And WebSocket client "alice" is connected ... error in 0.004s
+    And client "alice" joins room "restricted_room" with a generated libsodium-style public key ... skipped in 0.000s
+    When user "mallory" uploads file "blocked.txt" to room "restricted_room" with content ... skipped in 0.000s
+      """
+      blocked bytes
+      """
+    Then the last HTTP response should have status 403 ... skipped in 0.000s
+    And the last HTTP response body should contain "User is not a member of the specified room" ... skipped in 0.000s
+
+@scenario.end
+--------------------------------------------------------------------------------
+]]>
+</system-out></testcase></testsuite>

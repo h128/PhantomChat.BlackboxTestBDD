@@ -30,5 +30,10 @@ def after_scenario(context, scenario) -> None:
 
 
 def after_all(context) -> None:
-    context.world.close()
-    context.system_controller.stop()
+    world = getattr(context, "world", None)
+    if world is not None:
+        world.close()
+
+    system_controller = getattr(context, "system_controller", None)
+    if system_controller is not None:
+        system_controller.stop()

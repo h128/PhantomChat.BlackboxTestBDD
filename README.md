@@ -44,17 +44,17 @@ src/phantomchat_blackbox/
 ## Prerequisites
 
 - Python 3.11+
-- a reachable PhantomChat backend
-- optional: a command that starts the backend as an external process
+- run commands from the repository root
+- for live execution, a PhantomChat backend that exposes both:
+  - an HTTP base URL for file upload and download
+  - a WebSocket endpoint compatible with the room protocol used by these scenarios
+- optional: a shell command that starts the backend as an external process
 
-## Local execution
+## Environment setup
 
-1. Create and activate a virtual environment.
-2. Install the project in editable mode.
-3. Configure the system under test through environment variables.
-4. Run Behave.
+Create a virtual environment and install the suite in editable mode.
 
-Example PowerShell session:
+PowerShell:
 
 ```powershell
 Set-Location "C:\Programming\My source\PhantomChat.BlackboxTestBDD"
@@ -62,22 +62,23 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -e .
-
-$Env:PHANTOMCHAT_HTTP_BASE_URL = "http://127.0.0.1:8080"
-$Env:PHANTOMCHAT_WS_URL = "ws://127.0.0.1:8080/room"
-python -m behave
 ```
 
-If you want the suite to start the backend process for you, set:
+Bash:
 
-- `PHANTOMCHAT_SERVER_COMMAND`
-- `PHANTOMCHAT_SERVER_WORKDIR`
+```bash
+cd /path/to/PhantomChat.BlackboxTestBDD
+python -m venv .venv
+source .venv/Scripts/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+```
 
-The suite will treat that process as an external dependency and wait until the configured port is reachable.
+## Environment variables
 
-## Configuration
+The suite reads configuration only from environment variables. `.env.example` is a reference file; it is not loaded automatically.
 
-Supported environment variables:
+Supported variables:
 
 - `PHANTOMCHAT_HTTP_BASE_URL`
 - `PHANTOMCHAT_WS_URL`
@@ -88,25 +89,105 @@ Supported environment variables:
 - `PHANTOMCHAT_SERVER_COMMAND`
 - `PHANTOMCHAT_SERVER_WORKDIR`
 
-Defaults target a local backend at `http://127.0.0.1:8080` and `ws://127.0.0.1:8080/room`.
+Default values target a local backend at `http://127.0.0.1:8080` and `ws://127.0.0.1:8080/room`.
 
-## CI/CD
+PowerShell example:
+
+```powershell
+$Env:PHANTOMCHAT_HTTP_BASE_URL = "http://127.0.0.1:8080"
+$Env:PHANTOMCHAT_WS_URL = "ws://127.0.0.1:8080/room"
+$Env:PHANTOMCHAT_VERIFY_TLS = "false"
+```
+
+Bash example:
+
+```bash
+export PHANTOMCHAT_HTTP_BASE_URL="http://127.0.0.1:8080"
+export PHANTOMCHAT_WS_URL="ws://127.0.0.1:8080/room"
+export PHANTOMCHAT_VERIFY_TLS="false"
+```
+
+## Local execution
+
+Use these commands from the repository root after activating the virtual environment.
+
+Validate feature parsing and step bindings without requiring a backend:
+
+```bash
+python -m behave --dry-run
+```
+
+Run one feature file:
+
+```bash
+python -m behave features/chat_room.feature -f progress
+```
+
+Run a single scenario by line number:
+
+```bash
+python -m behave features/chat_room.feature:4
+```
+
+Run the full suite:
+
+```bash
+python -m behave -f progress
+```
+
+Run a feature while overriding the target backend through environment variables:
+
+```powershell
+$Env:PHANTOMCHAT_HTTP_BASE_URL = "https://your-backend.example"
+$Env:PHANTOMCHAT_WS_URL = "wss://your-backend.example/room"
+python -m behave features/file_transfer.feature -f progress
+```
+
+Notes:
+
+- `--dry-run` is the safest first check and does not require a running backend.
+- live runs require both the HTTP and WebSocket endpoints to match the PhantomChat contract.
+- if you only want machine-readable test output, use `--junit --junit-directory test-results`.
+
+## Optional backend startup from the test suite
+
+If you prefer the suite to boot the backend process for you, set `PHANTOMCHAT_SERVER_COMMAND`. Set `PHANTOMCHAT_SERVER_WORKDIR` as well when the backend must start from a specific directory.
+
+```powershell
+$Env:PHANTOMCHAT_HTTP_BASE_URL = "http://127.0.0.1:8080"
+$Env:PHANTOMCHAT_WS_URL = "ws://127.0.0.1:8080/room"
+$Env:PHANTOMCHAT_SERVER_COMMAND = ".\\path\\to\\start-backend.cmd"
+$Env:PHANTOMCHAT_SERVER_WORKDIR = "C:\path\to\backend"
+python -m behave -f progress
+```
+
+The test harness waits until the configured WebSocket host and port become reachable before scenarios start.
+
+## CI execution
 
 The repository includes a GitHub Actions workflow at [.github/workflows/bdd.yml](.github/workflows/bdd.yml).
 
-It is structured in two layers:
+It runs in two stages:
 
-- `validate-suite`: always verifies that the project installs and the Behave suite parses via `--dry-run`
-- `run-blackbox-tests`: runs the real integration suite when repository variables `PHANTOMCHAT_HTTP_BASE_URL` and `PHANTOMCHAT_WS_URL` are configured
+- `validate-suite` always installs the project and runs `python -m behave --dry-run`
+- `run-blackbox-tests` runs the live suite only when `PHANTOMCHAT_HTTP_BASE_URL` and `PHANTOMCHAT_WS_URL` are configured in repository variables
 
-This keeps the test project continuously valid even when no dedicated test environment is available, while still supporting real black-box execution in CI once a target environment exists.
+That split keeps CI useful even when no shared integration environment is available.
 
-For other CI systems, the command is the same:
+For other CI systems, use the same pattern:
 
 ```bash
+python -m pip install --upgrade pip
 python -m pip install -e .
+python -m behave --dry-run
 python -m behave --junit --junit-directory test-results
 ```
+
+## Troubleshooting
+
+- If `python -m behave --dry-run` passes but live runs fail immediately, verify that `PHANTOMCHAT_HTTP_BASE_URL` and `PHANTOMCHAT_WS_URL` point to the same PhantomChat deployment.
+- If the WebSocket step fails with a 404 during the handshake, the target server is reachable but `PHANTOMCHAT_WS_URL` is not the correct WebSocket endpoint for that environment.
+- If you are testing against HTTPS or WSS with a valid certificate, set `PHANTOMCHAT_VERIFY_TLS=true`.
 
 ## Notes from repository analysis
 
