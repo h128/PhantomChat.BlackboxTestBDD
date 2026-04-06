@@ -1,0 +1,154 @@
+<testsuite name="crypto_contract.Crypto-related handshake contract" tests="3" errors="3" failures="0" skipped="0" time="0.020219" timestamp="2026-04-06T18:04:47.644927" hostname="LAPTOP-SJOAEN66"><testcase classname="crypto_contract.Crypto-related handshake contract" name="Joining a room returns stable room key material for all members" status="error" time="0.008761"><error type="WebSocketBadStatusException" message="Handshake status 404 Not Found -+-+- {'connection': 'Keep-Alive', 'server': 'Embedthis-http', 'cache-control': 'no-cache', 'date': 'Mon, 06 Apr 2026 16:04:47 GMT', 'content-length': '173', 'keep-alive': 'timeout=60, max=199'} -+-+- b'&lt;!DOCTYPE html&gt;\r\n&lt;html&gt;&lt;head&gt;&lt;title&gt;Not Found&lt;/title&gt;&lt;/head&gt;\r\n&lt;body&gt;\r\n&lt;h2&gt;Access Error: 404 -- Not Found&lt;/h2&gt;\r\n&lt;pre&gt;Cannot open document for: /room&lt;/pre&gt;\r\n&lt;/body&gt;\r\n&lt;/html&gt;\r\n'">
+<![CDATA[
+Failing step: And WebSocket client "alice" is connected ... error in 0.008s
+Location: features/crypto_contract.feature:6
+Traceback (most recent call last):
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\behave\model.py", line 1991, in run
+    match.run(runner.context)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\behave\matchers.py", line 105, in run
+    self.func(context, *args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "features\steps\connection_steps.py", line 77, in step_connect_client
+    client.connect()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\src\phantomchat_blackbox\socket_client.py", line 39, in connect
+    self._socket = websocket.create_connection(self.url, timeout=self.timeout_seconds, **options)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_core.py", line 664, in create_connection
+    websock.connect(url, **options)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_core.py", line 268, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+                              ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_handshake.py", line 66, in handshake
+    status, resp = _get_resp_headers(sock)
+                   ~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_handshake.py", line 158, in _get_resp_headers
+    raise WebSocketBadStatusException(
+    ...<5 lines>...
+    )
+websocket._exceptions.WebSocketBadStatusException: Handshake status 404 Not Found -+-+- {'connection': 'Keep-Alive', 'server': 'Embedthis-http', 'cache-control': 'no-cache', 'date': 'Mon, 06 Apr 2026 16:04:47 GMT', 'content-length': '173', 'keep-alive': 'timeout=60, max=199'} -+-+- b'<!DOCTYPE html>\r\n<html><head><title>Not Found</title></head>\r\n<body>\r\n<h2>Access Error: 404 -- Not Found</h2>\r\n<pre>Cannot open document for: /room</pre>\r\n</body>\r\n</html>\r\n'
+]]>
+</error><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario: Joining a room returns stable room key material for all members
+    Given a unique room alias "crypto_room" ... passed in 0.001s
+    And WebSocket client "alice" is connected ... error in 0.008s
+    And WebSocket client "bob" is connected ... skipped in 0.000s
+    When client "alice" joins room "crypto_room" with a generated libsodium-style public key ... skipped in 0.000s
+    Then the response for client "alice" should contain ... skipped in 0.000s
+      | field        | value       |
+      | status       | 0           |
+      | room_created | true        |
+      | room_name    | crypto_room |
+    And the response field "room_key" for client "alice" should not be empty ... skipped in 0.000s
+    And the response field "room_key" for client "alice" should match regex "^[0-9a-f]{64}$" ... skipped in 0.000s
+    When client "bob" joins room "crypto_room" with a generated libsodium-style public key ... skipped in 0.000s
+    Then the response for client "bob" should contain ... skipped in 0.000s
+      | field        | value       |
+      | status       | 0           |
+      | room_created | false       |
+      | room_name    | crypto_room |
+    And the response field "room_key" for client "bob" should match regex "^[0-9a-f]{64}$" ... skipped in 0.000s
+    And the response field "room_key" for clients "alice" and "bob" should be equal ... skipped in 0.000s
+
+@scenario.end
+--------------------------------------------------------------------------------
+]]>
+</system-out></testcase><testcase classname="crypto_contract.Crypto-related handshake contract" name="Different rooms expose different room key material" status="error" time="0.005136"><error type="WebSocketBadStatusException" message="Handshake status 404 Not Found -+-+- {'connection': 'Keep-Alive', 'server': 'Embedthis-http', 'cache-control': 'no-cache', 'date': 'Mon, 06 Apr 2026 16:04:47 GMT', 'content-length': '173', 'keep-alive': 'timeout=60, max=199'} -+-+- b'&lt;!DOCTYPE html&gt;\r\n&lt;html&gt;&lt;head&gt;&lt;title&gt;Not Found&lt;/title&gt;&lt;/head&gt;\r\n&lt;body&gt;\r\n&lt;h2&gt;Access Error: 404 -- Not Found&lt;/h2&gt;\r\n&lt;pre&gt;Cannot open document for: /room&lt;/pre&gt;\r\n&lt;/body&gt;\r\n&lt;/html&gt;\r\n'">
+<![CDATA[
+Failing step: And WebSocket client "alice" is connected ... error in 0.004s
+Location: features/crypto_contract.feature:28
+Traceback (most recent call last):
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\behave\model.py", line 1991, in run
+    match.run(runner.context)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\behave\matchers.py", line 105, in run
+    self.func(context, *args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "features\steps\connection_steps.py", line 77, in step_connect_client
+    client.connect()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\src\phantomchat_blackbox\socket_client.py", line 39, in connect
+    self._socket = websocket.create_connection(self.url, timeout=self.timeout_seconds, **options)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_core.py", line 664, in create_connection
+    websock.connect(url, **options)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_core.py", line 268, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+                              ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_handshake.py", line 66, in handshake
+    status, resp = _get_resp_headers(sock)
+                   ~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_handshake.py", line 158, in _get_resp_headers
+    raise WebSocketBadStatusException(
+    ...<5 lines>...
+    )
+websocket._exceptions.WebSocketBadStatusException: Handshake status 404 Not Found -+-+- {'connection': 'Keep-Alive', 'server': 'Embedthis-http', 'cache-control': 'no-cache', 'date': 'Mon, 06 Apr 2026 16:04:47 GMT', 'content-length': '173', 'keep-alive': 'timeout=60, max=199'} -+-+- b'<!DOCTYPE html>\r\n<html><head><title>Not Found</title></head>\r\n<body>\r\n<h2>Access Error: 404 -- Not Found</h2>\r\n<pre>Cannot open document for: /room</pre>\r\n</body>\r\n</html>\r\n'
+]]>
+</error><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario: Different rooms expose different room key material
+    Given a unique room alias "crypto_room_one" ... passed in 0.000s
+    And a unique room alias "crypto_room_two" ... passed in 0.000s
+    And WebSocket client "alice" is connected ... error in 0.004s
+    And WebSocket client "bob" is connected ... skipped in 0.000s
+    When client "alice" joins room "crypto_room_one" with a generated libsodium-style public key ... skipped in 0.000s
+    And client "bob" joins room "crypto_room_two" with a generated libsodium-style public key ... skipped in 0.000s
+    Then the response field "room_key" for clients "alice" and "bob" should not be equal ... skipped in 0.000s
+
+@scenario.end
+--------------------------------------------------------------------------------
+]]>
+</system-out></testcase><testcase classname="crypto_contract.Crypto-related handshake contract" name="Malformed public key material is rejected" status="error" time="0.006322"><error type="WebSocketBadStatusException" message="Handshake status 404 Not Found -+-+- {'connection': 'Keep-Alive', 'server': 'Embedthis-http', 'cache-control': 'no-cache', 'date': 'Mon, 06 Apr 2026 16:04:47 GMT', 'content-length': '173', 'keep-alive': 'timeout=60, max=199'} -+-+- b'&lt;!DOCTYPE html&gt;\r\n&lt;html&gt;&lt;head&gt;&lt;title&gt;Not Found&lt;/title&gt;&lt;/head&gt;\r\n&lt;body&gt;\r\n&lt;h2&gt;Access Error: 404 -- Not Found&lt;/h2&gt;\r\n&lt;pre&gt;Cannot open document for: /room&lt;/pre&gt;\r\n&lt;/body&gt;\r\n&lt;/html&gt;\r\n'">
+<![CDATA[
+Failing step: And WebSocket client "mallory" is connected ... error in 0.005s
+Location: features/crypto_contract.feature:36
+Traceback (most recent call last):
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\behave\model.py", line 1991, in run
+    match.run(runner.context)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\behave\matchers.py", line 105, in run
+    self.func(context, *args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "features\steps\connection_steps.py", line 77, in step_connect_client
+    client.connect()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\src\phantomchat_blackbox\socket_client.py", line 39, in connect
+    self._socket = websocket.create_connection(self.url, timeout=self.timeout_seconds, **options)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_core.py", line 664, in create_connection
+    websock.connect(url, **options)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_core.py", line 268, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+                              ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_handshake.py", line 66, in handshake
+    status, resp = _get_resp_headers(sock)
+                   ~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Programming\My source\PhantomChat.BlackboxTestBDD\.venv\Lib\site-packages\websocket\_handshake.py", line 158, in _get_resp_headers
+    raise WebSocketBadStatusException(
+    ...<5 lines>...
+    )
+websocket._exceptions.WebSocketBadStatusException: Handshake status 404 Not Found -+-+- {'connection': 'Keep-Alive', 'server': 'Embedthis-http', 'cache-control': 'no-cache', 'date': 'Mon, 06 Apr 2026 16:04:47 GMT', 'content-length': '173', 'keep-alive': 'timeout=60, max=199'} -+-+- b'<!DOCTYPE html>\r\n<html><head><title>Not Found</title></head>\r\n<body>\r\n<h2>Access Error: 404 -- Not Found</h2>\r\n<pre>Cannot open document for: /room</pre>\r\n</body>\r\n</html>\r\n'
+]]>
+</error><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario: Malformed public key material is rejected
+    Given a unique room alias "crypto_validation_room" ... passed in 0.001s
+    And WebSocket client "mallory" is connected ... error in 0.005s
+    When client "mallory" joins room "crypto_validation_room" with public key "not-a-valid key!" ... skipped in 0.000s
+    Then the response for client "mallory" should contain ... skipped in 0.000s
+      | field  | value |
+      | status | 1     |
+    And the response field "message" for client "mallory" should contain "public_key" ... skipped in 0.000s
+
+@scenario.end
+--------------------------------------------------------------------------------
+]]>
+</system-out></testcase></testsuite>
