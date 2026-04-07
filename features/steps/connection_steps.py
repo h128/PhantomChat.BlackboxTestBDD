@@ -301,6 +301,7 @@ def step_assert_response_field_not_empty(context, field_name: str, name: str) ->
         raise AssertionError(f"Field '{field_name}' was unexpectedly empty: {actual_value!r}")
 
 
+@given('"{name}" should be able to open the room key from the reply')
 @then('"{name}" should be able to open the room key from the reply')
 def step_decrypt_room_key(context, name: str) -> None:
     try:

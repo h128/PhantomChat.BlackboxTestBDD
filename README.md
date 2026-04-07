@@ -274,6 +274,13 @@ What the deferred crypto suite does not currently prove:
 
 Those properties are not fully observable through the current public API because the message contract still exposes a plain `message` field and does not publish the nonce, algorithm marker, ciphertext field names, or any other AES framing needed for black-box verification.
 
+The suite now also covers the highest-value encrypted transport checks that are possible today without changing the application:
+
+- optional scenarios can encrypt chat content client-side, carry that ciphertext inside the existing `message` field, and verify another room member can decrypt it with the same opened room key
+- those chat scenarios prove the backend can relay opaque ciphertext without exposing the plaintext in the observed socket payloads, but they do not claim the current frontend already uses that format in production
+- optional scenarios can encrypt file bytes with the opened room key, upload the encrypted bytes, download them again, and verify the downloaded ciphertext opens back to the original content
+- those file scenarios mirror the current frontend-compatible nonce-prefixed secretbox blob format that is already observable at the public HTTP boundary
+
 ## Future extension for RTCPeerConnection scenarios
 
 The current call scenarios stop at signaling relay, which is the right black-box boundary for the server today. For end-to-end media negotiation later, the project is prepared in two ways:
