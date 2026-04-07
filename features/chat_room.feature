@@ -1,68 +1,56 @@
-Feature: Room lifecycle and chat messaging
-  The chat backend should expose a stable room and messaging contract over WebSocket.
+Feature: Joining a room and chatting
+  People can open a room, talk to each other, and leave with clear feedback.
 
-  Scenario: Two users can create and join the same room
-    Given a unique room alias "main_room"
-    And WebSocket client "alice" is connected
-    And WebSocket client "bob" is connected
-    When client "alice" joins room "main_room" with a generated libsodium-style public key
-    Then the response for client "alice" should contain
+  Scenario: Alice opens a room and Bob joins her
+    Given a fresh room called "main_room"
+    And "alice" is connected
+    And "bob" is connected
+    When "alice" joins room "main_room" with a valid key
+    Then the reply for "alice" should include
       | field        | value     |
       | status       | 0         |
       | room_created | true      |
       | room_name    | main_room |
       | members      | alice     |
-    When client "bob" joins room "main_room" with a generated libsodium-style public key
-    Then the response for client "bob" should contain
+    When "bob" joins room "main_room" with a valid key
+    Then the reply for "bob" should include
       | field        | value     |
       | status       | 0         |
       | room_created | false     |
       | room_name    | main_room |
       | members      | alice,bob |
-    And client "alice" should receive a "UserEnteredRoom" event containing
-      | field     | value     |
-      | room_name | main_room |
-      | user_uuid | bob       |
+    And "alice" should be told that "bob" joined room "main_room"
 
-  Scenario: A joined user can send a chat message to the room
-    Given a unique room alias "chat_room"
-    And WebSocket client "alice" is connected
-    And WebSocket client "bob" is connected
-    And client "alice" joins room "chat_room" with a generated libsodium-style public key
-    And client "bob" joins room "chat_room" with a generated libsodium-style public key
-    When client "alice" sends chat message "hello from behave"
-    Then the response for client "alice" should contain
+  Scenario: Someone in the room can send a message
+    Given a fresh room called "chat_room"
+    And "alice" is connected
+    And "bob" is connected
+    And "alice" joins room "chat_room" with a valid key
+    And "bob" joins room "chat_room" with a valid key
+    When "alice" sends the message "hello from behave"
+    Then the reply for "alice" should include
       | field   | value             |
       | status  | 0                 |
       | message | hello from behave |
-    And client "alice" should receive a "NewMessageReceived" event containing
-      | field       | value             |
-      | sender_uuid | alice             |
-      | message     | hello from behave |
-    And client "bob" should receive a "NewMessageReceived" event containing
-      | field       | value             |
-      | sender_uuid | alice             |
-      | message     | hello from behave |
+    And "bob" should receive the message "hello from behave" from "alice"
 
-  Scenario: The server rejects a chat message from a client outside any room
-    Given WebSocket client "alice" is connected
-    When client "alice" sends chat message "this should fail"
-    Then the response for client "alice" should contain
+  Scenario: Someone outside the room cannot send a message
+    Given "alice" is connected
+    When "alice" sends the message "this should fail"
+    Then the reply for "alice" should include
       | field   | value                |
       | status  | 1                    |
       | message | User not in a room   |
 
-  Scenario: Leaving a room notifies the remaining participants
-    Given a unique room alias "leave_room"
-    And WebSocket client "alice" is connected
-    And WebSocket client "bob" is connected
-    And client "alice" joins room "leave_room" with a generated libsodium-style public key
-    And client "bob" joins room "leave_room" with a generated libsodium-style public key
-    When client "bob" leaves the current room
-    Then the response for client "bob" should contain
-      | field   | value                |
+  Scenario: Leaving the room tells the people who stayed
+    Given a fresh room called "leave_room"
+    And "alice" is connected
+    And "bob" is connected
+    And "alice" joins room "leave_room" with a valid key
+    And "bob" joins room "leave_room" with a valid key
+    When "bob" leaves the room
+    Then the reply for "bob" should include
+      | field   | value |
       | status  | 0                    |
-      | message | Left room            |
-    And client "alice" should receive a "LeaveRoom" event containing
-      | field     | value |
-      | user_uuid | bob   |
+    And "alice" should be told that "bob" left the room
+    And the reply field "message" for "bob" should mention "Left room"

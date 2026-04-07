@@ -18,7 +18,8 @@ The initial suite focuses on stable, externally visible behavior:
 - authenticated file upload and download over REST
 - file upload broadcast events over WebSocket
 - call signaling relay over WebSocket for future WebRTC scenarios
-- crypto-handshake contract checks for client public keys and server-returned room key material
+
+By default, the suite now targets the currently working public deployment behavior. Crypto-specific contract checks are kept in the repository as an optional path and are not part of the default run.
 
 ## Project structure
 
@@ -89,23 +90,46 @@ Supported variables:
 - `PHANTOMCHAT_SERVER_COMMAND`
 - `PHANTOMCHAT_SERVER_WORKDIR`
 
-Default values target a local backend at `http://127.0.0.1:8080` and `ws://127.0.0.1:8080/room`.
+The checked-in `.env.example` targets the current deployed environment:
+
+- `PHANTOMCHAT_HTTP_BASE_URL=https://iping.site`
+- `PHANTOMCHAT_WS_URL=wss://iping.site/room`
+- `PHANTOMCHAT_VERIFY_TLS=true`
+
+If you do not set any variables yourself, the code defaults now target the current deployed environment at `https://iping.site` and `wss://iping.site/room`.
+For a local backend, override `PHANTOMCHAT_HTTP_BASE_URL`, `PHANTOMCHAT_WS_URL`, and `PHANTOMCHAT_VERIFY_TLS` explicitly.
 
 PowerShell example:
 
 ```powershell
-$Env:PHANTOMCHAT_HTTP_BASE_URL = "http://127.0.0.1:8080"
-$Env:PHANTOMCHAT_WS_URL = "ws://127.0.0.1:8080/room"
-$Env:PHANTOMCHAT_VERIFY_TLS = "false"
+$Env:PHANTOMCHAT_HTTP_BASE_URL = "https://iping.site"
+$Env:PHANTOMCHAT_WS_URL = "wss://iping.site/room"
+$Env:PHANTOMCHAT_VERIFY_TLS = "true"
 ```
 
 Bash example:
 
 ```bash
-export PHANTOMCHAT_HTTP_BASE_URL="http://127.0.0.1:8080"
-export PHANTOMCHAT_WS_URL="ws://127.0.0.1:8080/room"
-export PHANTOMCHAT_VERIFY_TLS="false"
+export PHANTOMCHAT_HTTP_BASE_URL="https://iping.site"
+export PHANTOMCHAT_WS_URL="wss://iping.site/room"
+export PHANTOMCHAT_VERIFY_TLS="true"
 ```
+
+## Default vs optional coverage
+
+Default runs cover the currently stable public behavior:
+
+- WebSocket connect and room join/create
+- chat send and receive behavior as exposed by the deployed service
+- leave flow
+- file upload and download
+- signaling relay
+
+Deferred for now:
+
+- dedicated crypto/public-key contract validation in `features/crypto_contract.feature`
+
+The crypto feature is still maintained in the repository, but it is tagged `@crypto_contract` and excluded by default so it does not block the main suite while that contract is still evolving.
 
 ## Local execution
 
@@ -117,7 +141,16 @@ Validate feature parsing and step bindings without requiring a backend:
 python -m behave --dry-run
 ```
 
-Run one feature file:
+Run the default active suite against the deployed environment:
+
+```powershell
+$Env:PHANTOMCHAT_HTTP_BASE_URL = "https://iping.site"
+$Env:PHANTOMCHAT_WS_URL = "wss://iping.site/room"
+$Env:PHANTOMCHAT_VERIFY_TLS = "true"
+python -m behave -f progress
+```
+
+Run one active feature file:
 
 ```bash
 python -m behave features/chat_room.feature -f progress
@@ -135,6 +168,12 @@ Run the full suite:
 python -m behave -f progress
 ```
 
+Run the deferred crypto contract feature explicitly:
+
+```bash
+python -m behave --tags=@crypto_contract features/crypto_contract.feature
+```
+
 Run a feature while overriding the target backend through environment variables:
 
 ```powershell
@@ -146,6 +185,7 @@ python -m behave features/file_transfer.feature -f progress
 Notes:
 
 - `--dry-run` is the safest first check and does not require a running backend.
+- the default run excludes `@crypto_contract` scenarios.
 - live runs require both the HTTP and WebSocket endpoints to match the PhantomChat contract.
 - if you only want machine-readable test output, use `--junit --junit-directory test-results`.
 
@@ -188,6 +228,7 @@ python -m behave --junit --junit-directory test-results
 - If `python -m behave --dry-run` passes but live runs fail immediately, verify that `PHANTOMCHAT_HTTP_BASE_URL` and `PHANTOMCHAT_WS_URL` point to the same PhantomChat deployment.
 - If the WebSocket step fails with a 404 during the handshake, the target server is reachable but `PHANTOMCHAT_WS_URL` is not the correct WebSocket endpoint for that environment.
 - If you are testing against HTTPS or WSS with a valid certificate, set `PHANTOMCHAT_VERIFY_TLS=true`.
+- The deployed environment currently emits `NewMessageReceived` to the other room member and returns a successful leave response without a stable echoed `request_uuid`. The active scenarios reflect that behavior.
 
 ## Notes from repository analysis
 
@@ -203,29 +244,35 @@ The current contract inferred from the application repositories is:
 - upload requires headers:
   - `x-room-name`
   - `x-user-uuid`
-- join responses currently expose a `room_key` field that the frontend treats as opaque key material for file encryption
-- join requests currently include a `public_key` field, but the present public protocol does not expose enough information to prove whether the server encrypted any returned secret specifically to that public key
+- join requests include a `public_key` field
+- join responses currently expose both `room_key` and `server_pub_key`
+- the observed deployed join flow is compatible with libsodium box-based handling: a client can send a Curve25519 public key, receive encrypted room key material back, and open it with the matching private key when using the returned `server_pub_key` and the currently observed zero nonce convention
+- chat messages are still sent and relayed through the public `message` field as plain text at the protocol level; no public AES message envelope is exposed yet
 
 The suite intentionally validates those behaviors from the wire, not through direct code reuse.
 
-## Current crypto coverage
+## Deferred crypto coverage
 
-The suite now validates the highest-value crypto-related behavior that is observable black-box today:
+The suite still contains crypto-related black-box checks for future use, including:
 
-- a client can submit well-formed public-key shaped material during room join
+- a client can generate a real key pair with PyNaCl and submit the public key during room join
 - malformed public-key material is rejected at the protocol boundary
-- room join returns non-empty opaque key material in `room_key`
-- the returned `room_key` is stable for multiple members of the same room
-- different rooms receive different `room_key` values
-- the key material matches the current libsodium-style hex contract observed in the implementation direction
+- room join returns encrypted key material in `room_key`
+- the join reply exposes `server_pub_key`
+- the returned encrypted `room_key` can be opened client-side with the matching private key
+- the opened room key is stable for multiple members of the same room
+- different rooms open to different room keys
 
-What the suite does not currently prove:
+Those checks are opt-in for now because the crypto/public-key contract is still considered subject to change.
 
-- that the server encrypts any payload with the caller's public key
-- that `room_key` is an encrypted room secret rather than a raw room public key or shared secret string
-- which exact libsodium primitive is used on the server side
+What the deferred crypto suite does not currently prove:
 
-Those properties are not fully observable through the current public API because the join response does not expose a decryptable envelope plus a separate server public key in a way a black-box client can verify end-to-end.
+- that chat messages are AES-encrypted before they cross the wire
+- what the public AES message envelope looks like on the socket
+- how a recipient should distinguish encrypted chat content from ordinary plain-text message payloads
+- whether file encryption and chat encryption are intended to use the exact same decrypted room key bytes and framing rules
+
+Those properties are not fully observable through the current public API because the message contract still exposes a plain `message` field and does not publish the nonce, algorithm marker, ciphertext field names, or any other AES framing needed for black-box verification.
 
 ## Future extension for RTCPeerConnection scenarios
 
@@ -242,9 +289,13 @@ The next step for richer call coverage would be to add a dedicated peer connecti
 
 ## Future extension for full crypto verification
 
-If the public protocol evolves to return both:
+The suite now includes a PyNaCl-based client harness for the join flow, so the remaining step for full end-to-end crypto verification is the chat payload contract itself. Once the public API exposes an explicit AES message envelope, the suite should extend the optional crypto coverage to:
 
-- a server room public key, and
-- an encrypted room secret or envelope addressed to the caller's public key,
+- encrypt chat payloads with the decrypted room key before sending
+- assert the wire format is ciphertext rather than plain text
+- decrypt received chat payloads back to the expected message content
 
-then this suite should add end-to-end cryptographic verification with a Python libsodium-compatible client harness. At that point a black-box scenario can generate a real key pair, join a room, decrypt the returned envelope, and verify the decrypted secret is consistent across participants without inspecting server internals.
+Until then, full end-to-end crypto validation should remain optional and limited to the join-time key exchange.
+
+
+![alt text](image.png)

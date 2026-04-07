@@ -35,9 +35,9 @@ class TestConfig:
     def from_env(cls) -> "TestConfig":
         server_workdir = os.getenv("PHANTOMCHAT_SERVER_WORKDIR")
         return cls(
-            http_base_url=os.getenv("PHANTOMCHAT_HTTP_BASE_URL", "http://127.0.0.1:8080").rstrip("/"),
-            websocket_url=os.getenv("PHANTOMCHAT_WS_URL", "ws://127.0.0.1:8080/room"),
-            verify_tls=_get_env_bool("PHANTOMCHAT_VERIFY_TLS", False),
+            http_base_url=os.getenv("PHANTOMCHAT_HTTP_BASE_URL", "https://iping.site").rstrip("/"),
+            websocket_url=os.getenv("PHANTOMCHAT_WS_URL", "wss://iping.site/room"),
+            verify_tls=_get_env_bool("PHANTOMCHAT_VERIFY_TLS", True),
             request_timeout_seconds=_get_env_float("PHANTOMCHAT_REQUEST_TIMEOUT_SECONDS", 5.0),
             event_timeout_seconds=_get_env_float("PHANTOMCHAT_EVENT_TIMEOUT_SECONDS", 5.0),
             startup_timeout_seconds=_get_env_float("PHANTOMCHAT_STARTUP_TIMEOUT_SECONDS", 30.0),

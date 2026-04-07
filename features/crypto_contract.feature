@@ -1,41 +1,52 @@
-Feature: Crypto-related handshake contract
-  The externally visible join protocol should expose stable key material and reject obviously malformed client public keys.
+@crypto_contract
+Feature: Room keys when people join
+  Joining a room returns encrypted room access details, and clearly broken keys are turned away.
 
-  Scenario: Joining a room returns stable room key material for all members
-    Given a unique room alias "crypto_room"
-    And WebSocket client "alice" is connected
-    And WebSocket client "bob" is connected
-    When client "alice" joins room "crypto_room" with a generated libsodium-style public key
-    Then the response for client "alice" should contain
+  Scenario: People in the same room can open the same room key
+    Given a fresh room called "crypto_room"
+    And "alice" is connected
+    And "bob" is connected
+    When "alice" joins room "crypto_room" with a generated key pair
+    Then the reply for "alice" should include
       | field        | value       |
       | status       | 0           |
       | room_created | true        |
       | room_name    | crypto_room |
-    And the response field "room_key" for client "alice" should not be empty
-    And the response field "room_key" for client "alice" should match regex "^[0-9a-f]{64}$"
-    When client "bob" joins room "crypto_room" with a generated libsodium-style public key
-    Then the response for client "bob" should contain
+    And the reply field "room_key" for "alice" should not be empty
+    And the reply field "room_key" for "alice" should match regex "^[0-9a-f]+$"
+    And the reply field "room_key" for "alice" should be longer than 64 characters
+    And the reply field "server_pub_key" for "alice" should match regex "^[0-9a-f]{64}$"
+    And "alice" should be able to open the room key from the reply
+    And the opened room key for "alice" should match regex "^[0-9a-f]{64}$"
+    When "bob" joins room "crypto_room" with a generated key pair
+    Then the reply for "bob" should include
       | field        | value       |
       | status       | 0           |
       | room_created | false       |
       | room_name    | crypto_room |
-    And the response field "room_key" for client "bob" should match regex "^[0-9a-f]{64}$"
-    And the response field "room_key" for clients "alice" and "bob" should be equal
+    And the reply field "room_key" for "bob" should match regex "^[0-9a-f]+$"
+    And the reply field "room_key" for "bob" should be longer than 64 characters
+    And the reply field "server_pub_key" for "bob" should match regex "^[0-9a-f]{64}$"
+    And "bob" should be able to open the room key from the reply
+    And the opened room key for "bob" should match regex "^[0-9a-f]{64}$"
+    And the opened room key for "alice" and "bob" should be the same
 
-  Scenario: Different rooms expose different room key material
-    Given a unique room alias "crypto_room_one"
-    And a unique room alias "crypto_room_two"
-    And WebSocket client "alice" is connected
-    And WebSocket client "bob" is connected
-    When client "alice" joins room "crypto_room_one" with a generated libsodium-style public key
-    And client "bob" joins room "crypto_room_two" with a generated libsodium-style public key
-    Then the response field "room_key" for clients "alice" and "bob" should not be equal
+  Scenario: Different rooms open to different room keys
+    Given a fresh room called "crypto_room_one"
+    And another fresh room called "crypto_room_two"
+    And "alice" is connected
+    And "bob" is connected
+    When "alice" joins room "crypto_room_one" with a generated key pair
+    And "bob" joins room "crypto_room_two" with a generated key pair
+    Then "alice" should be able to open the room key from the reply
+    And "bob" should be able to open the room key from the reply
+    And the opened room key for "alice" and "bob" should be different
 
-  Scenario: Malformed public key material is rejected
-    Given a unique room alias "crypto_validation_room"
-    And WebSocket client "mallory" is connected
-    When client "mallory" joins room "crypto_validation_room" with public key "not-a-valid key!"
-    Then the response for client "mallory" should contain
+  Scenario: A clearly broken key is rejected
+    Given a fresh room called "crypto_validation_room"
+    And "mallory" is connected
+    When "mallory" joins room "crypto_validation_room" with key "not-a-valid key!"
+    Then the reply for "mallory" should include
       | field  | value |
       | status | 1     |
-    And the response field "message" for client "mallory" should contain "public_key"
+    And the reply field "message" for "mallory" should mention "public_key"

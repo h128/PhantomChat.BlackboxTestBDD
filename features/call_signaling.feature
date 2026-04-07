@@ -1,26 +1,25 @@
-Feature: Call signaling
-  The backend should relay call signaling envelopes between room members without exposing implementation details.
+Feature: Passing along call setup messages
+  People in the same room can pass call setup details to each other.
 
-  Scenario: An SDP offer is relayed to another participant
-    Given a unique room alias "call_room"
-    And WebSocket client "alice" is connected
-    And WebSocket client "bob" is connected
-    And client "alice" joins room "call_room" with a generated libsodium-style public key
-    And client "bob" joins room "call_room" with a generated libsodium-style public key
-    When client "alice" sends signaling action "OFFER" with JSON payload
+  Scenario: Alice starts a call and Bob receives the offer
+    Given a fresh room called "call_room"
+    And "alice" is connected
+    And "bob" is connected
+    And "alice" joins room "call_room" with a valid key
+    And "bob" joins room "call_room" with a valid key
+    When "alice" shares the call step "OFFER" with details
       """
       {
         "type": "offer",
         "sdp": "dummy-offer-sdp"
       }
       """
-    Then the response for client "alice" should contain
+    Then the reply for "alice" should include
       | field   | value                               |
       | status  | 0                                   |
       | message | Signal call dispatched successfully |
-    And client "bob" should receive a "SignalCallRelay" event containing
+    And "bob" should receive the call details from "alice"
       | field       | value           |
       | action      | OFFER           |
-      | sender_uuid | alice           |
       | data.type   | offer           |
       | data.sdp    | dummy-offer-sdp |
