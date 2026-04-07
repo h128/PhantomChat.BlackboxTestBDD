@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "behave>=1.2.6,<2",
+    "pynacl>=1.5,<2",
     "requests>=2.32,<3",
     "websocket-client>=1.8,<2",
 ]

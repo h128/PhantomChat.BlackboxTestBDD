@@ -7,6 +7,7 @@ from typing import Any
 
 from behave import given, then, when
 
+from phantomchat_blackbox.crypto import CryptoProtocolError
 from phantomchat_blackbox.protocol import SignalCallAction, SocketCommand, signal_action_from_name
 
 
@@ -100,6 +101,8 @@ def step_join_room(context, name: str, room_alias: str, public_key: str) -> None
 @when('client "{name}" joins room "{room_alias}" with a generated libsodium-style public key')
 @given('"{name}" joins room "{room_alias}" with a valid key')
 @when('"{name}" joins room "{room_alias}" with a valid key')
+@given('"{name}" joins room "{room_alias}" with a generated key pair')
+@when('"{name}" joins room "{room_alias}" with a generated key pair')
 def step_join_room_with_generated_public_key(context, name: str, room_alias: str) -> None:
     step_join_room(context, name, room_alias, context.world.client_public_key(name))
 
@@ -245,6 +248,20 @@ def step_assert_response_field_contains_text(context, field_name: str, name: str
         )
 
 
+@then('the reply field "{field_name}" for "{name}" should be longer than {minimum_length:d} characters')
+def step_assert_response_field_length(context, field_name: str, name: str, minimum_length: int) -> None:
+    payload = context.world.last_socket_response.get(name)
+    if payload is None:
+        raise AssertionError(f"No stored response found for client '{name}'")
+    actual_value = _resolve_path(payload, field_name)
+    if not isinstance(actual_value, str):
+        raise AssertionError(f"Field '{field_name}' is not a string: {actual_value!r}")
+    if len(actual_value) <= minimum_length:
+        raise AssertionError(
+            f"Field '{field_name}' length {len(actual_value)} was not greater than {minimum_length}."
+        )
+
+
 @then('the response field "{field_name}" for clients "{left_name}" and "{right_name}" should be equal')
 @then('the reply field "{field_name}" for "{left_name}" and "{right_name}" should be the same')
 def step_assert_response_fields_equal(context, field_name: str, left_name: str, right_name: str) -> None:
@@ -282,4 +299,45 @@ def step_assert_response_field_not_empty(context, field_name: str, name: str) ->
     actual_value = _resolve_path(payload, field_name)
     if actual_value in (None, "", [], {}):
         raise AssertionError(f"Field '{field_name}' was unexpectedly empty: {actual_value!r}")
+
+
+@then('"{name}" should be able to open the room key from the reply')
+def step_decrypt_room_key(context, name: str) -> None:
+    try:
+        context.world.decrypt_room_key_for_client(name)
+    except CryptoProtocolError as exc:
+        raise AssertionError(str(exc)) from exc
+
+
+@then('the opened room key for "{name}" should match regex "{pattern}"')
+def step_assert_decrypted_room_key_matches_regex(context, name: str, pattern: str) -> None:
+    decrypted_room_key = context.world.last_decrypted_room_key.get(name)
+    if decrypted_room_key is None:
+        raise AssertionError(f"No decrypted room key has been stored for client '{name}'")
+    if re.fullmatch(pattern, decrypted_room_key) is None:
+        raise AssertionError(
+            f"Opened room key value {decrypted_room_key!r} did not match regex {pattern!r}."
+        )
+
+
+@then('the opened room key for "{left_name}" and "{right_name}" should be the same')
+def step_assert_decrypted_room_keys_equal(context, left_name: str, right_name: str) -> None:
+    left_value = context.world.last_decrypted_room_key.get(left_name)
+    right_value = context.world.last_decrypted_room_key.get(right_name)
+    if left_value is None or right_value is None:
+        raise AssertionError("Both clients must have decrypted room keys before comparing them")
+    assert left_value == right_value, (
+        f"Opened room keys differed unexpectedly: {left_value!r} and {right_value!r}."
+    )
+
+
+@then('the opened room key for "{left_name}" and "{right_name}" should be different')
+def step_assert_decrypted_room_keys_not_equal(context, left_name: str, right_name: str) -> None:
+    left_value = context.world.last_decrypted_room_key.get(left_name)
+    right_value = context.world.last_decrypted_room_key.get(right_name)
+    if left_value is None or right_value is None:
+        raise AssertionError("Both clients must have decrypted room keys before comparing them")
+    assert left_value != right_value, (
+        f"Opened room keys matched unexpectedly: {left_value!r}."
+    )
 

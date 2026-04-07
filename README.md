@@ -243,8 +243,10 @@ The current contract inferred from the application repositories is:
 - upload requires headers:
   - `x-room-name`
   - `x-user-uuid`
-- join responses currently expose a `room_key` field that the frontend treats as opaque key material for file encryption
-- join requests currently include a `public_key` field, but the present public protocol does not expose enough information to prove whether the server encrypted any returned secret specifically to that public key
+- join requests include a `public_key` field
+- join responses currently expose both `room_key` and `server_pub_key`
+- the observed deployed join flow is compatible with libsodium box-based handling: a client can send a Curve25519 public key, receive encrypted room key material back, and open it with the matching private key when using the returned `server_pub_key` and the currently observed zero nonce convention
+- chat messages are still sent and relayed through the public `message` field as plain text at the protocol level; no public AES message envelope is exposed yet
 
 The suite intentionally validates those behaviors from the wire, not through direct code reuse.
 
@@ -252,22 +254,24 @@ The suite intentionally validates those behaviors from the wire, not through dir
 
 The suite still contains crypto-related black-box checks for future use, including:
 
-- a client can submit well-formed public-key shaped material during room join
+- a client can generate a real key pair with PyNaCl and submit the public key during room join
 - malformed public-key material is rejected at the protocol boundary
-- room join returns non-empty opaque key material in `room_key`
-- the returned `room_key` is stable for multiple members of the same room
-- different rooms receive different `room_key` values
-- the key material matches the current libsodium-style hex contract observed in the implementation direction
+- room join returns encrypted key material in `room_key`
+- the join reply exposes `server_pub_key`
+- the returned encrypted `room_key` can be opened client-side with the matching private key
+- the opened room key is stable for multiple members of the same room
+- different rooms open to different room keys
 
 Those checks are opt-in for now because the crypto/public-key contract is still considered subject to change.
 
 What the deferred crypto suite does not currently prove:
 
-- that the server encrypts any payload with the caller's public key
-- that `room_key` is an encrypted room secret rather than a raw room public key or shared secret string
-- which exact libsodium primitive is used on the server side
+- that chat messages are AES-encrypted before they cross the wire
+- what the public AES message envelope looks like on the socket
+- how a recipient should distinguish encrypted chat content from ordinary plain-text message payloads
+- whether file encryption and chat encryption are intended to use the exact same decrypted room key bytes and framing rules
 
-Those properties are not fully observable through the current public API because the join response does not expose a decryptable envelope plus a separate server public key in a way a black-box client can verify end-to-end.
+Those properties are not fully observable through the current public API because the message contract still exposes a plain `message` field and does not publish the nonce, algorithm marker, ciphertext field names, or any other AES framing needed for black-box verification.
 
 ## Future extension for RTCPeerConnection scenarios
 
@@ -284,12 +288,13 @@ The next step for richer call coverage would be to add a dedicated peer connecti
 
 ## Future extension for full crypto verification
 
-If the public protocol evolves to return both:
+The suite now includes a PyNaCl-based client harness for the join flow, so the remaining step for full end-to-end crypto verification is the chat payload contract itself. Once the public API exposes an explicit AES message envelope, the suite should extend the optional crypto coverage to:
 
-- a server room public key, and
-- an encrypted room secret or envelope addressed to the caller's public key,
+- encrypt chat payloads with the decrypted room key before sending
+- assert the wire format is ciphertext rather than plain text
+- decrypt received chat payloads back to the expected message content
 
-then this suite should add end-to-end cryptographic verification with a Python libsodium-compatible client harness. At that point a black-box scenario can generate a real key pair, join a room, decrypt the returned envelope, and verify the decrypted secret is consistent across participants without inspecting server internals.
+Until then, full end-to-end crypto validation should remain optional and limited to the join-time key exchange.
 
 
 ![alt text](image.png)

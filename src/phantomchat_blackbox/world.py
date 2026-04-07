@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import hashlib
 import re
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
 from phantomchat_blackbox.config import TestConfig
+from phantomchat_blackbox.crypto import ClientKeyMaterial, decrypt_join_room_key
 from phantomchat_blackbox.http_client import PhantomHttpClient
 from phantomchat_blackbox.socket_client import PhantomSocketClient
 
@@ -23,9 +23,11 @@ class TestWorld:
     config: TestConfig
     http: PhantomHttpClient = field(init=False)
     clients: dict[str, PhantomSocketClient] = field(default_factory=dict)
+    client_keys: dict[str, ClientKeyMaterial] = field(default_factory=dict)
     room_aliases: dict[str, str] = field(default_factory=dict)
     last_socket_response: dict[str, dict[str, Any]] = field(default_factory=dict)
     last_socket_event: dict[str, dict[str, Any]] = field(default_factory=dict)
+    last_decrypted_room_key: dict[str, str] = field(default_factory=dict)
     last_http_response: Any | None = None
     last_downloaded_content: bytes | None = None
 
@@ -40,6 +42,7 @@ class TestWorld:
         self.room_aliases.clear()
         self.last_socket_response.clear()
         self.last_socket_event.clear()
+        self.last_decrypted_room_key.clear()
         self.last_http_response = None
         self.last_downloaded_content = None
 
@@ -47,6 +50,7 @@ class TestWorld:
         for client in self.clients.values():
             client.close()
         self.clients.clear()
+        self.client_keys.clear()
         self.reset_for_scenario()
 
     def close(self) -> None:
@@ -68,10 +72,23 @@ class TestWorld:
     def client_user_uuid(self, name: str) -> str:
         return sanitize_identifier(name)
 
+    def client_key_material(self, name: str) -> ClientKeyMaterial:
+        key_material = self.client_keys.get(name)
+        if key_material is None:
+            key_material = ClientKeyMaterial.from_seed_text(name)
+            self.client_keys[name] = key_material
+        return key_material
+
     def client_public_key(self, name: str) -> str:
-        # Use deterministic 32-byte hex key material so scenarios exercise a realistic
-        # public-key shaped contract without coupling to a specific client implementation.
-        return hashlib.sha256(name.encode("utf-8")).hexdigest()
+        return self.client_key_material(name).public_key_hex
+
+    def decrypt_room_key_for_client(self, name: str, payload: dict[str, Any] | None = None) -> str:
+        response_payload = payload or self.last_socket_response.get(name)
+        if response_payload is None:
+            raise AssertionError(f"No stored response found for client '{name}'")
+        decrypted_room_key = decrypt_join_room_key(response_payload, self.client_key_material(name))
+        self.last_decrypted_room_key[name] = decrypted_room_key
+        return decrypted_room_key
 
     def create_unique_room(self, alias: str) -> str:
         room_name = f"bdd-{sanitize_identifier(alias).lower()}-{uuid.uuid4().hex[:8]}"
