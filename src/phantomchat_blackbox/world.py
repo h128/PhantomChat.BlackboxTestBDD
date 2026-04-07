@@ -27,8 +27,11 @@ class TestWorld:
     room_aliases: dict[str, str] = field(default_factory=dict)
     last_socket_response: dict[str, dict[str, Any]] = field(default_factory=dict)
     last_socket_event: dict[str, dict[str, Any]] = field(default_factory=dict)
+    last_socket_request: dict[str, dict[str, Any]] = field(default_factory=dict)
     last_decrypted_room_key: dict[str, str] = field(default_factory=dict)
     last_http_response: Any | None = None
+    last_http_request_headers: dict[str, str] = field(default_factory=dict)
+    last_uploaded_content: bytes | None = None
     last_downloaded_content: bytes | None = None
 
     def __post_init__(self) -> None:
@@ -42,8 +45,11 @@ class TestWorld:
         self.room_aliases.clear()
         self.last_socket_response.clear()
         self.last_socket_event.clear()
+        self.last_socket_request.clear()
         self.last_decrypted_room_key.clear()
+        self.last_http_request_headers.clear()
         self.last_http_response = None
+        self.last_uploaded_content = None
         self.last_downloaded_content = None
 
     def cleanup_scenario(self) -> None:
