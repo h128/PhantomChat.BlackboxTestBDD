@@ -96,7 +96,8 @@ The checked-in `.env.example` targets the current deployed environment:
 - `PHANTOMCHAT_WS_URL=wss://iping.site/room`
 - `PHANTOMCHAT_VERIFY_TLS=true`
 
-If you do not set any variables yourself, the code defaults still target a local backend at `http://127.0.0.1:8080` and `ws://127.0.0.1:8080/room`.
+If you do not set any variables yourself, the code defaults now target the current deployed environment at `https://iping.site` and `wss://iping.site/room`.
+For a local backend, override `PHANTOMCHAT_HTTP_BASE_URL`, `PHANTOMCHAT_WS_URL`, and `PHANTOMCHAT_VERIFY_TLS` explicitly.
 
 PowerShell example:
 
