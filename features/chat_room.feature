@@ -1,10 +1,12 @@
 Feature: Joining a room and chatting
   People can open a room, talk to each other, and leave with clear feedback.
 
-  Scenario: Alice opens a room and Bob joins her
+  Scenario: Alice opens a room and Bob joins with his chosen profile
     Given a fresh room called "main_room"
     And "alice" is connected
     And "bob" is connected
+    And "alice" chooses display name "Alice" and avatar id 7
+    And "bob" chooses display name "Bob" and avatar id 12
     When "alice" joins room "main_room" with a valid key
     Then the reply for "alice" should include
       | field        | value     |
@@ -12,6 +14,9 @@ Feature: Joining a room and chatting
       | room_created | true      |
       | room_name    | main_room |
       | members      | alice     |
+    And the reply for "alice" should include these room member profiles
+      | user  | display_name | avatar_id |
+      | alice | Alice        | 7         |
     When "bob" joins room "main_room" with a valid key
     Then the reply for "bob" should include
       | field        | value     |
@@ -19,7 +24,11 @@ Feature: Joining a room and chatting
       | room_created | false     |
       | room_name    | main_room |
       | members      | alice,bob |
-    And "alice" should be told that "bob" joined room "main_room"
+    And the reply for "bob" should include these room member profiles
+      | user  | display_name | avatar_id |
+      | alice | Alice        | 7         |
+      | bob   | Bob          | 12        |
+    And "alice" should be told that "bob" joined room "main_room" with the chosen profile
 
   Scenario: Someone in the room can send a message
     Given a fresh room called "chat_room"

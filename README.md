@@ -13,6 +13,7 @@ The scenarios were derived from the current backend and frontend contracts in th
 The initial suite focuses on stable, externally visible behavior:
 
 - room creation and join flow over WebSocket
+- room-member profile metadata on join responses and join events
 - chat message delivery and server-side validation
 - explicit leave notifications
 - authenticated file upload and download over REST
@@ -245,7 +246,10 @@ The current contract inferred from the application repositories is:
   - `x-room-name`
   - `x-user-uuid`
 - join requests include a `public_key` field
+- join requests can include `avatar_id` and `display_name`
 - join responses currently expose both `room_key` and `server_pub_key`
+- join responses expose `members` as member objects with `user_uuid`, `avatar_id`, and `display_name`
+- `UserEnteredRoom` events expose `avatar_id` and `display_name`
 - the observed deployed join flow is compatible with libsodium box-based handling: a client can send a Curve25519 public key, receive encrypted room key material back, and open it with the matching private key when using the returned `server_pub_key` and the currently observed zero nonce convention
 - chat messages are still sent and relayed through the public `message` field as plain text at the protocol level; no public AES message envelope is exposed yet
 

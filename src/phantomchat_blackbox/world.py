@@ -24,6 +24,7 @@ class TestWorld:
     http: PhantomHttpClient = field(init=False)
     clients: dict[str, PhantomSocketClient] = field(default_factory=dict)
     client_keys: dict[str, ClientKeyMaterial] = field(default_factory=dict)
+    client_profiles: dict[str, dict[str, Any]] = field(default_factory=dict)
     room_aliases: dict[str, str] = field(default_factory=dict)
     last_socket_response: dict[str, dict[str, Any]] = field(default_factory=dict)
     last_socket_event: dict[str, dict[str, Any]] = field(default_factory=dict)
@@ -57,6 +58,7 @@ class TestWorld:
             client.close()
         self.clients.clear()
         self.client_keys.clear()
+        self.client_profiles.clear()
         self.reset_for_scenario()
 
     def close(self) -> None:
@@ -87,6 +89,21 @@ class TestWorld:
 
     def client_public_key(self, name: str) -> str:
         return self.client_key_material(name).public_key_hex
+
+    def set_client_profile(self, name: str, display_name: str, avatar_id: int) -> None:
+        self.client_profiles[name] = {
+            "display_name": display_name.strip(),
+            "avatar_id": int(avatar_id),
+        }
+
+    def client_profile(self, name: str) -> dict[str, Any]:
+        profile = self.client_profiles.get(name)
+        if profile is None:
+            return {
+                "display_name": "",
+                "avatar_id": 0,
+            }
+        return profile
 
     def decrypt_room_key_for_client(self, name: str, payload: dict[str, Any] | None = None) -> str:
         response_payload = payload or self.last_socket_response.get(name)
