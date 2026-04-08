@@ -54,7 +54,10 @@ def _members_by_user_uuid(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
     for member in members:
         if not isinstance(member, dict) or "user_uuid" not in member:
             raise AssertionError(f"Expected each member to be an object with 'user_uuid', got {member!r}")
-        by_user_uuid[str(member["user_uuid"])] = member
+        user_uuid = str(member["user_uuid"])
+        if user_uuid in by_user_uuid:
+            raise AssertionError(f"Expected unique member 'user_uuid' values, got duplicate {user_uuid!r}")
+        by_user_uuid[user_uuid] = member
     return by_user_uuid
 
 
