@@ -97,13 +97,13 @@ class TestWorld:
         }
 
     def client_profile(self, name: str) -> dict[str, Any]:
-        return self.client_profiles.setdefault(
-            name,
-            {
+        profile = self.client_profiles.get(name)
+        if profile is None:
+            return {
                 "display_name": "",
                 "avatar_id": 0,
-            },
-        )
+            }
+        return profile
 
     def decrypt_room_key_for_client(self, name: str, payload: dict[str, Any] | None = None) -> str:
         response_payload = payload or self.last_socket_response.get(name)
