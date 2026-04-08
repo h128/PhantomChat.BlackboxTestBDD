@@ -109,15 +109,17 @@ def step_choose_profile(context, name: str, display_name: str, avatar_id: int) -
 @when('"{name}" joins room "{room_alias}" with key "{public_key}"')
 def step_join_room(context, name: str, room_alias: str, public_key: str) -> None:
     client = context.world.create_client(name)
-    profile = context.world.client_profile(name)
-    response = client.send_command(
-        SocketCommand.JOIN_OR_CREATE_ROOM,
-        user_uuid=context.world.client_user_uuid(name),
-        room_name=context.world.resolve_room(room_alias),
-        public_key=public_key,
-        avatar_id=profile["avatar_id"],
-        display_name=profile["display_name"],
-    )
+    payload = {
+        "user_uuid": context.world.client_user_uuid(name),
+        "room_name": context.world.resolve_room(room_alias),
+        "public_key": public_key,
+    }
+    client_profiles = getattr(context.world, "client_profiles", {})
+    if name in client_profiles:
+        profile = context.world.client_profile(name)
+        payload["avatar_id"] = profile["avatar_id"]
+        payload["display_name"] = profile["display_name"]
+    response = client.send_command(SocketCommand.JOIN_OR_CREATE_ROOM, **payload)
     context.world.last_socket_response[name] = response
 
 
