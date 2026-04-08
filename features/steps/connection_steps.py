@@ -45,6 +45,19 @@ def _convert_expected_value(world, field_name: str, raw_value: str) -> Any:
     return text
 
 
+def _members_by_user_uuid(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    members = payload.get("members")
+    if not isinstance(members, list):
+        raise AssertionError(f"Expected 'members' to be a list, got {members!r}")
+
+    by_user_uuid: dict[str, dict[str, Any]] = {}
+    for member in members:
+        if not isinstance(member, dict) or "user_uuid" not in member:
+            raise AssertionError(f"Expected each member to be an object with 'user_uuid', got {member!r}")
+        by_user_uuid[str(member["user_uuid"])] = member
+    return by_user_uuid
+
+
 def _assert_payload_contains(world, payload: dict[str, Any], rows) -> None:
     for row in rows:
         field_name = row["field"]
@@ -57,7 +70,10 @@ def _assert_payload_contains(world, payload: dict[str, Any], rows) -> None:
                 for item in row["value"].split(",")
                 if item.strip()
             }
-            actual_items = set(actual_value)
+            if all(isinstance(item, dict) and "user_uuid" in item for item in actual_value):
+                actual_items = {item["user_uuid"] for item in actual_value}
+            else:
+                actual_items = set(actual_value)
             assert actual_items == expected_items, (
                 f"Field '{field_name}' mismatch. Expected items {expected_items}, got {actual_items}."
             )
@@ -82,17 +98,25 @@ def step_connect_client(context, name: str) -> None:
     client.connect()
 
 
+@given('"{name}" chooses display name "{display_name}" and avatar id {avatar_id:d}')
+def step_choose_profile(context, name: str, display_name: str, avatar_id: int) -> None:
+    context.world.set_client_profile(name, display_name, avatar_id)
+
+
 @given('client "{name}" joins room "{room_alias}" with public key "{public_key}"')
 @when('client "{name}" joins room "{room_alias}" with public key "{public_key}"')
 @given('"{name}" joins room "{room_alias}" with key "{public_key}"')
 @when('"{name}" joins room "{room_alias}" with key "{public_key}"')
 def step_join_room(context, name: str, room_alias: str, public_key: str) -> None:
     client = context.world.create_client(name)
+    profile = context.world.client_profile(name)
     response = client.send_command(
         SocketCommand.JOIN_OR_CREATE_ROOM,
         user_uuid=context.world.client_user_uuid(name),
         room_name=context.world.resolve_room(room_alias),
         public_key=public_key,
+        avatar_id=profile["avatar_id"],
+        display_name=profile["display_name"],
     )
     context.world.last_socket_response[name] = response
 
@@ -157,6 +181,36 @@ def step_assert_response(context, name: str) -> None:
     _assert_payload_contains(context.world, payload, context.table)
 
 
+@then('the reply for "{name}" should include these room member profiles')
+def step_assert_room_member_profiles(context, name: str) -> None:
+    payload = context.world.last_socket_response.get(name)
+    if payload is None:
+        raise AssertionError(f"No stored response found for client '{name}'")
+
+    actual_members = _members_by_user_uuid(payload)
+    expected_users = set()
+    for row in context.table:
+        user_name = row["user"]
+        user_uuid = context.world.client_user_uuid(user_name)
+        expected_users.add(user_uuid)
+        actual_member = actual_members.get(user_uuid)
+        if actual_member is None:
+            raise AssertionError(f"Expected member '{user_uuid}' in reply for client '{name}', got {actual_members!r}")
+
+        expected_display_name = row["display_name"]
+        expected_avatar_id = int(row["avatar_id"])
+        assert actual_member.get("display_name") == expected_display_name, (
+            f"Expected member '{user_uuid}' display_name {expected_display_name!r}, got {actual_member.get('display_name')!r}."
+        )
+        assert actual_member.get("avatar_id") == expected_avatar_id, (
+            f"Expected member '{user_uuid}' avatar_id {expected_avatar_id!r}, got {actual_member.get('avatar_id')!r}."
+        )
+
+    assert set(actual_members) == expected_users, (
+        f"Expected member set {expected_users}, got {set(actual_members)}."
+    )
+
+
 @then('client "{name}" should receive a "{event_name}" event containing')
 def step_assert_event(context, name: str, event_name: str) -> None:
     client = context.world.create_client(name)
@@ -177,6 +231,19 @@ def step_assert_user_joined(context, name: str, other_name: str, room_alias: str
     )
     assert event.get("user_uuid") == expected_user_uuid, (
         f"Expected join event user_uuid {expected_user_uuid!r}, got {event.get('user_uuid')!r}."
+    )
+
+
+@then('"{name}" should be told that "{other_name}" joined room "{room_alias}" with the chosen profile')
+def step_assert_user_joined_with_profile(context, name: str, other_name: str, room_alias: str) -> None:
+    step_assert_user_joined(context, name, other_name, room_alias)
+    event = context.world.last_socket_event[name]
+    expected_profile = context.world.client_profile(other_name)
+    assert event.get("display_name") == expected_profile["display_name"], (
+        f"Expected join event display_name {expected_profile['display_name']!r}, got {event.get('display_name')!r}."
+    )
+    assert event.get("avatar_id") == expected_profile["avatar_id"], (
+        f"Expected join event avatar_id {expected_profile['avatar_id']!r}, got {event.get('avatar_id')!r}."
     )
 
 
