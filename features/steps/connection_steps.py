@@ -75,8 +75,19 @@ def _assert_payload_contains(world, payload: dict[str, Any], rows) -> None:
             }
             if all(isinstance(item, dict) and "user_uuid" in item for item in actual_value):
                 actual_items = {item["user_uuid"] for item in actual_value}
+            elif any(isinstance(item, dict) for item in actual_value):
+                raise AssertionError(
+                    f"Field '{field_name}' contains object items that cannot be compared as a set "
+                    "unless every object includes 'user_uuid'."
+                )
             else:
-                actual_items = set(actual_value)
+                try:
+                    actual_items = set(actual_value)
+                except TypeError as exc:
+                    raise AssertionError(
+                        f"Field '{field_name}' contains unhashable collection items that cannot be "
+                        "compared as a set."
+                    ) from exc
             assert actual_items == expected_items, (
                 f"Field '{field_name}' mismatch. Expected items {expected_items}, got {actual_items}."
             )
