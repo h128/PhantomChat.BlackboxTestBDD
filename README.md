@@ -6,6 +6,8 @@ This repository contains a Python + Behave black-box integration test suite for 
 - REST upload endpoint at `/upload-document/:filename`
 - REST download endpoint at `/download-document/:room/:filename`
 
+The repository also includes a separate async load/stress test CLI for WebSocket-heavy room and chat traffic. That load path is intentionally kept outside Behave so it can simulate higher concurrency without distorting the BDD suite structure.
+
 The scenarios were derived from the current backend and frontend contracts in the sibling repositories, but the tests do not import or call internal application code.
 
 ## What is covered
@@ -36,6 +38,11 @@ features/
 src/phantomchat_blackbox/
   config.py
   http_client.py
+  loadtest/
+    __main__.py
+    config.py
+    reporting.py
+    runner.py
   protocol.py
   runtime.py
   socket_client.py
@@ -189,6 +196,94 @@ Notes:
 - the default run excludes `@crypto_contract` scenarios.
 - live runs require both the HTTP and WebSocket endpoints to match the PhantomChat contract.
 - if you only want machine-readable test output, use `--junit --junit-directory test-results`.
+
+## Load and stress testing
+
+The load tool is a separate async CLI that focuses on the public WebSocket contract. It does not depend on Behave state, but it reuses the same public protocol knowledge already encoded in this repository:
+
+- socket command `1` for room join/create
+- socket command `2` for chat send
+- generated libsodium-style client public keys for join compatibility
+- unique room names and user identities per run
+
+It is intended as a practical server-capacity probe for questions such as:
+
+- can the current deployment handle 10, 25, 50, or 100 concurrent users?
+- how many users connect and join successfully?
+- how many chat messages are acknowledged and delivered?
+- when do timeout, join, or disconnect failures start to appear?
+
+### Run the load tool
+
+You can run the tool either through the console script or as a module.
+
+PowerShell:
+
+```powershell
+$Env:PHANTOMCHAT_WS_URL = "wss://iping.site/room"
+$Env:PHANTOMCHAT_VERIFY_TLS = "true"
+phantomchat-loadtest --users 10 --rooms 2 --messages-per-user 3 --message-rate 1 --ramp-up-seconds 2
+```
+
+Equivalent module form:
+
+```powershell
+python -m phantomchat_blackbox.loadtest --users 10 --rooms 2 --messages-per-user 3 --message-rate 1 --ramp-up-seconds 2
+```
+
+### Practical example commands
+
+Start conservatively and ramp up:
+
+```powershell
+python -m phantomchat_blackbox.loadtest --users 10 --rooms 2 --messages-per-user 3 --message-rate 1 --ramp-up-seconds 2
+python -m phantomchat_blackbox.loadtest --users 25 --rooms 5 --messages-per-user 3 --message-rate 1 --ramp-up-seconds 5
+python -m phantomchat_blackbox.loadtest --users 50 --rooms 10 --messages-per-user 2 --message-rate 1 --ramp-up-seconds 10
+```
+
+Short duration-based run instead of fixed per-user message counts:
+
+```powershell
+python -m phantomchat_blackbox.loadtest --users 25 --rooms 5 --messages-per-user 0 --duration-seconds 20 --message-rate 1.5 --ramp-up-seconds 5
+```
+
+Write a JSON summary to `test-results` for later comparison:
+
+```powershell
+python -m phantomchat_blackbox.loadtest --users 25 --rooms 5 --messages-per-user 3 --message-rate 1 --json-output test-results/loadtest-25u.json
+```
+
+### Useful options
+
+- `--users`: total concurrent users to simulate
+- `--rooms`: number of rooms to distribute them across
+- `--messages-per-user`: fixed number of messages each joined user attempts
+- `--message-rate`: per-user send rate in messages per second
+- `--duration-seconds`: optional duration cap for sender loops
+- `--ramp-up-seconds`: spreads connection and join attempts over time
+- `--connect-timeout-seconds`: WebSocket handshake timeout
+- `--join-timeout-seconds`: join response timeout
+- `--send-timeout-seconds`: send response timeout
+- `--receive-settle-seconds`: extra wait for late message events after sending completes
+- `--json-output`: write a machine-readable report file
+
+### Metrics in the summary
+
+- `Connections`: successful and failed WebSocket handshakes, plus unexpected disconnects
+- `Joins`: successful and failed room join/create responses
+- `Sends`: chat send attempts, acknowledged sends, and failed sends
+- `Receives`: observed `NewMessageReceived` events versus expected event fanout
+- `Send ack latency`: time from sending a chat request until its direct server response
+- `Delivery latency`: time from send start until a recipient receives the chat event
+- `Rooms`: joined-user count per generated room
+- `Failures`: top grouped failure reasons for quick diagnosis
+
+### Notes and limitations
+
+- The load tool stays black-box and uses only the public WebSocket interface.
+- Delivery latency is measured using unique generated message payloads and recipient events; it is useful for capacity checks, not precision benchmarking.
+- The current implementation focuses on join and chat traffic, which is the most useful MVP for server-capacity checks on a weak deployment.
+- It does not currently model uploads, downloads, or signaling load.
 
 ## Optional backend startup from the test suite
 

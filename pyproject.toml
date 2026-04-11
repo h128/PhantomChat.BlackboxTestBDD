@@ -13,7 +13,11 @@ dependencies = [
     "pynacl>=1.5,<2",
     "requests>=2.32,<3",
     "websocket-client>=1.8,<2",
+    "websockets>=13,<16",
 ]
+
+[project.scripts]
+phantomchat-loadtest = "phantomchat_blackbox.loadtest.__main__:main"
 
 [project.optional-dependencies]
 webrtc = [
