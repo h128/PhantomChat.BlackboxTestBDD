@@ -14,7 +14,7 @@
     "send_timeout_seconds": 5.0,
     "users": 50,
     "verify_tls": true,
-    "websocket_url": "wss://iping.site/room"
+    "websocket_url": "wss://Fantom.chat/room"
   },
   "joined_users": [
     "user-0001",
@@ -619,5 +619,5 @@
     "load-room-load-20260411-092627-d415bb-10"
   ],
   "run_id": "load-20260411-092627-d415bb",
-  "target_url": "wss://iping.site/room"
+  "target_url": "wss://Fantom.chat/room"
 }
