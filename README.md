@@ -100,26 +100,26 @@ Supported variables:
 
 The checked-in `.env.example` targets the current deployed environment:
 
-- `PHANTOMCHAT_HTTP_BASE_URL=https://iping.site`
-- `PHANTOMCHAT_WS_URL=wss://iping.site/room`
+- `PHANTOMCHAT_HTTP_BASE_URL=https://Fantom.chat`
+- `PHANTOMCHAT_WS_URL=wss://Fantom.chat/room`
 - `PHANTOMCHAT_VERIFY_TLS=true`
 
-If you do not set any variables yourself, the code defaults now target the current deployed environment at `https://iping.site` and `wss://iping.site/room`.
+If you do not set any variables yourself, the code defaults now target the current deployed environment at `https://Fantom.chat` and `wss://Fantom.chat/room`.
 For a local backend, override `PHANTOMCHAT_HTTP_BASE_URL`, `PHANTOMCHAT_WS_URL`, and `PHANTOMCHAT_VERIFY_TLS` explicitly.
 
 PowerShell example:
 
 ```powershell
-$Env:PHANTOMCHAT_HTTP_BASE_URL = "https://iping.site"
-$Env:PHANTOMCHAT_WS_URL = "wss://iping.site/room"
+$Env:PHANTOMCHAT_HTTP_BASE_URL = "https://Fantom.chat"
+$Env:PHANTOMCHAT_WS_URL = "wss://Fantom.chat/room"
 $Env:PHANTOMCHAT_VERIFY_TLS = "true"
 ```
 
 Bash example:
 
 ```bash
-export PHANTOMCHAT_HTTP_BASE_URL="https://iping.site"
-export PHANTOMCHAT_WS_URL="wss://iping.site/room"
+export PHANTOMCHAT_HTTP_BASE_URL="https://Fantom.chat"
+export PHANTOMCHAT_WS_URL="wss://Fantom.chat/room"
 export PHANTOMCHAT_VERIFY_TLS="true"
 ```
 
@@ -152,8 +152,8 @@ python -m behave --dry-run
 Run the default active suite against the deployed environment:
 
 ```powershell
-$Env:PHANTOMCHAT_HTTP_BASE_URL = "https://iping.site"
-$Env:PHANTOMCHAT_WS_URL = "wss://iping.site/room"
+$Env:PHANTOMCHAT_HTTP_BASE_URL = "https://Fantom.chat"
+$Env:PHANTOMCHAT_WS_URL = "wss://Fantom.chat/room"
 $Env:PHANTOMCHAT_VERIFY_TLS = "true"
 python -m behave -f progress
 ```
@@ -220,7 +220,7 @@ You can run the tool either through the console script or as a module.
 PowerShell:
 
 ```powershell
-$Env:PHANTOMCHAT_WS_URL = "wss://iping.site/room"
+$Env:PHANTOMCHAT_WS_URL = "wss://Fantom.chat/room"
 $Env:PHANTOMCHAT_VERIFY_TLS = "true"
 phantomchat-loadtest --users 10 --rooms 2 --messages-per-user 3 --message-rate 1 --ramp-up-seconds 2
 ```
